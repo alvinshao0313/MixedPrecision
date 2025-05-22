@@ -188,3 +188,4 @@ ckpt/
 *.ckpt
 *.safetensors
 *.txt
+third_party/
