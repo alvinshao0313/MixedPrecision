@@ -1,0 +1,70 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python 调试程序: 包含参数的当前文件",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "${command:pickArgs}"
+            ]
+        },
+        {
+            "name": "预置参数",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "--model",
+                "meta-llama/Llama-2-7b-hf",
+                "--fuse_norm",
+                "--use_r1",
+                "--use_r2",
+                "offline",
+                "--no-use_r3",
+                "--use_r4",
+                "--no-w_rtn",
+                "--w_groupsize",
+                "-1",
+                "--w_clip",
+                "--mix_precision",
+                "--protect_threshold",
+                "2.",
+                "--a_clip_ratio",
+                "1.0",
+                "--w_bits",
+                "4",
+                "--a_bits",
+                "4",
+                "--k_bits",
+                "16",
+                "--v_bits",
+                "16",
+                "--k_groupsize",
+                "128",
+                "--v_groupsize",
+                "128",
+                "--no-first_token_protect",
+                "--k_asym",
+                "--v_asym",
+                "--o_per_head",
+                "--percdamp",
+                "0.01",
+                "--save_name",
+                "mp_w4a4kv16",
+                "--ppl_eval",
+                "--ppl_eval_batch_size",
+                "1",
+                "--ppl_eval_dataset",
+                "wikitext2",
+            ],
+            "justMyCode": false,
+        }
+    ]
+}
