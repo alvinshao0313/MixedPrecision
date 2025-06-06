@@ -341,6 +341,7 @@ def rtn_fwrd(model, dev, args):
                     W[:, j:j + groupsize] = quantized_w
 
             else:
+                W_clone = W.clone()
                 quantizer.find_params(W)
                 W = quantizer.quantize(W)
 

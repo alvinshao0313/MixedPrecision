@@ -137,11 +137,33 @@ def random_orthogonal_matrix(size, device):
     return q
 
 
+def cube_hadamard_matrix(size, device):
+    assert len(size) == 2, f'Cube Hadamard matrix should have 2 dimensions, got {len(size)}'
+    had = random_hadamard_matrix(size[0], device)
+    cube_had = torch.zeros([size[1], size[1]], dtype=torch.float64, device=device)
+    for i in range(0, size[1], size[0]):
+        cube_had[i:i + size[0], i:i + size[0]] = had
+    return cube_had
+
+
+def cube_random_matrix(size, device):
+    assert len(size) == 2, f'Cube Hadamard matrix should have 2 dimensions, got {len(size)}'
+    orth = random_orthogonal_matrix(size[0], device)
+    cube_orth = torch.zeros([size[1], size[1]], dtype=torch.float64, device=device)
+    for i in range(0, size[1], size[0]):
+        cube_orth[i:i + size[0], i:i + size[0]] = orth
+    return cube_orth
+
+
 def get_orthogonal_matrix(size, mode, device=utils.DEV):
     if mode == 'random':
         return random_orthogonal_matrix(size, device)
     elif mode == 'hadamard':
         return random_hadamard_matrix(size, device)
+    elif mode == 'cube_had':
+        return cube_hadamard_matrix(size, device)
+    elif mode == 'cube_random':
+        return cube_random_matrix(size, device)
     else:
         raise ValueError(f'Unknown mode {mode}')
 
@@ -266,8 +288,8 @@ def rotate_head(model, Q: torch.Tensor) -> None:
 
 
 def rotate_ov_proj(layer, model_type, head_dim, kv_head,
-                   l_id, use_r2, r2_mode, r2_path=None,
-                   smooth=None):
+                   l_id, use_r2, rot_mode, r2_path=None,
+                   smooth=None, rot_size=None):
     v_proj = layer.self_attn.v_proj
     if model_type == model_utils.LLAMA_MODEL:
         o_proj = layer.self_attn.o_proj
@@ -285,10 +307,14 @@ def rotate_ov_proj(layer, model_type, head_dim, kv_head,
             r2s = torch.load(r2_path, map_location='cpu')
             Q = r2s[f"model.layers.{l_id}.self_attn.R2"].to(device=utils.DEV,
                                                             dtype=torch.float64)
+        elif rot_mode == 'cube_had':
+            assert rot_size > 0, "rotate_size should be > 0."
+            rot_size = [rot_size, head_dim]
+            Q = get_orthogonal_matrix(rot_size,
+                                      rot_mode)
         else:
-            Q = get_orthogonal_matrix(head_dim, r2_mode)
-            if len(Q.shape) != 3:
-                Q = Q.repeat(kv_head, 1, 1)
+            Q = get_orthogonal_matrix(head_dim, rot_mode)
+
         apply_multi_head_rotate(v_proj, Q, head_dim, l_id,
                                 kv_head, output=True, smooth=smooth)
         apply_multi_head_rotate(o_proj, Q, head_dim, l_id,
@@ -339,9 +365,13 @@ def apply_multi_head_rotate(module, Q, head_dim, l_id,
 def rotate_model(model, args):
     if args.r1_path is not None:  # Q: r1 获取 r1 并将其融入到模型中
         Q = torch.load(args.r1_path, map_location=torch.device(utils.DEV))['R1'].to(dtype=torch.float64)
+    elif args.rotate_mode == 'cube_had':
+        assert args.rotate_group > 0, "rotate_size should be > 0."
+        rot_size = [args.rotate_group, model.config.hidden_size]
+        Q = get_orthogonal_matrix(rot_size, args.rotate_mode)
     else:
-        Q = get_orthogonal_matrix(model.config.hidden_size,
-                                  args.rotate_mode)
+        rot_size = model.config.hidden_size
+        Q = get_orthogonal_matrix(rot_size, args.rotate_mode)
 
     smooth_scale = torch.load(args.smooth) if args.smooth is not None else None
     if smooth_scale is not None:
@@ -365,7 +395,7 @@ def rotate_model(model, args):
         rotate_mlp_output(layers[idx], Q, model_type, args.use_r4, idx, smooth_scale)
         if args.use_r2 != 'none':
             rotate_ov_proj(layers[idx], model_type, head_dim, kv_head, idx, args.use_r2,
-                           args.rotate_mode, args.r2_path, smooth_scale)
+                           args.rotate_mode, args.r2_path, smooth_scale, args.rotate_group)
 
 
 @torch.inference_mode

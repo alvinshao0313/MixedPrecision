@@ -37,7 +37,10 @@ def parser_gen():
                         help='''Use R3 for rotate Q/K Online.''')
     parser.add_argument('--use_r4', action=argparse.BooleanOptionalAction, default=False,
                         help='''Use R4 for rotate down-projection inputs Online.''')
-    parser.add_argument('--rotate_mode', type=str, default='hadamard', choices=['hadamard', 'random'])
+    parser.add_argument('--rotate_mode', type=str, default='hadamard', choices=['hadamard', 'random', 'cube_had'])
+    parser.add_argument('--rotate_group', type=int, default=-1,
+                        help='Cube size for generating random matrix!!')
+
     # parser.add_argument('--rotation_seed', type=int, default=-1,
     #                     help='Random Seed for generating random matrix!!')
     parser.add_argument('--fp32_had', action=argparse.BooleanOptionalAction, default=False,
